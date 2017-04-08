@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import UserNotifications
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,7 +17,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        UNUserNotificationCenter.current().delegate = self
+        UNUserNotificationCenter.current().requestAuthorization(options: [.sound, .alert]) { (granted, error) in
+            if granted {
+                print("Approval granted to send notifications")
+            }
+        }
+        self.addCategory()
         return true
+    }
+    
+    private func addCategory() {
+        let cancelAction = UNNotificationAction(identifier: Identifier.cancelAction, title: "cancel", options: [.foreground])
+        let otherAction = UNNotificationAction(identifier: Identifier.otherAction, title: "other", options: [.foreground])
+        let likeAction = UNNotificationAction(identifier: Identifier.likeAction, title: "like", options: [.foreground])
+        let category = UNNotificationCategory(identifier: Identifier.reminderLater, actions: [likeAction, otherAction, cancelAction], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([category])
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
@@ -42,5 +58,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
 
+}
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        if response.actionIdentifier == Identifier.cancelAction {
+            let reuest = response.notification.request
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [reuest.identifier])
+        } else if response.actionIdentifier == Identifier.likeAction {
+            print("like")
+        } else if response.actionIdentifier == Identifier.otherAction {
+            print("other")
+        }
+        completionHandler()
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler(.alert)
+    }
 }
 
